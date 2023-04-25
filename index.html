@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Apartment Finder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <label for="excel-file">Choose an Excel file:</label>
+    <input type="file" id="excel-file" accept=".xlsx, .xls" /><br />
+    <label for="property-id">Enter a property ID:</label>
+    <input type="text" id="property-id" /><br />
+    <button id="search-btn">Search</button>
+    <div id="result"></div>
+    <script>
+      const excelFile = document.getElementById("excel-file");
+      const propertyId = document.getElementById("property-id");
+      const searchBtn = document.getElementById("search-btn");
+      const resultDiv = document.getElementById("result");
+
+      searchBtn.addEventListener("click", async () => {
+        const file = excelFile.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const range = XLSX.utils.decode_range(sheet["!ref"]);
+          let found = false;
+          for (let rowNum = range.s.r; rowNum <= range.e.r; rowNum++) {
+            const cell = sheet[XLSX.utils.encode_cell({ r: rowNum, c: 0 })];
+            if (cell && cell.v === propertyId.value) {
+              found = true;
+              const address = sheet[XLSX.utils.encode_cell({ r: rowNum, c: 1 })].v;
+              const price = sheet[XLSX.utils.encode_cell({ r: rowNum, c: 2 })].v;
+              resultDiv.innerHTML = `
+                <p>Address: ${address}</p>
+                <p>Price: ${price}</p>
+              `;
+              break;
+            }
+          }
+          if (!found) {
+            resultDiv.innerHTML = "Property ID not found";
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    </script>
+  </body>
+</html>
